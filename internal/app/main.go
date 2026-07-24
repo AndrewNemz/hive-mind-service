@@ -1,15 +1,20 @@
 package main
 
 import (
-	"net/http"
 	"fmt"
+	"hiv_mind/internal/handlers"
+	"net/http"
 )
 
-func main()  {
-	
+func main() {
+	if err := run(); err != nil {
+		panic(err)
+	}
 }
 
-func run() {
+func run() error {
 	fmt.Println("Старт сервиса")
-	err := http.ListenAndServe()
+
+	storage := handlers.NewMemStorage()
+	return http.ListenAndServe(`:8080`, http.StripPrefix("/update/", storage))
 }
