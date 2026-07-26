@@ -26,33 +26,38 @@ func (ms *MemStorage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	path := r.URL.Path
 	params := strings.Split(path, "/")
-	if len(params) < 3 {
-		w.WriteHeader(http.StatusBadRequest)
+	err := ValidateParams(params, w)
+	if err != nil {
 		return
 	}
 
 	metricType := params[0]
 	metricName := params[1]
-	metricVal, err := strconv.Atoi(params[2])
+
+	var valInt int64
+	var valFloat float64
+	if metricType == "gauge" {
+		valFloat, err = strconv.ParseFloat(params[2], 64)
+	} else {
+		valInt, err = strconv.ParseInt(params[2], 10, 64)
+	}
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	fmt.Printf("Parsed paramas: type - %s, name - %s, val %d \n", metricType, metricName, metricVal)
-
 	if _, ok := ms.Storage[metricName]; !ok {
 		ms.Storage[metricName] = &entities.Metrics{}
 	}
 
-	switch metricType {
+	switch strings.ToLower(metricType) {
 	case "gauge":
-		ms.Storage[metricName].Gauge = float64(metricVal)
+		ms.Storage[metricName].Gauge = valFloat
 		fmt.Println(ms.Storage[metricName])
 		w.WriteHeader(http.StatusOK)
 		return
 	case "counter":
-		ms.Storage[metricName].Counter += int64(metricVal)
+		ms.Storage[metricName].Counter += valInt
 		fmt.Println(ms.Storage[metricName])
 		w.WriteHeader(http.StatusOK)
 		return
@@ -61,4 +66,24 @@ func (ms *MemStorage) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+}
+
+func ValidateParams(params []string, w http.ResponseWriter) error {
+	fmt.Println("Переданные параметры", params)
+	if len(params) < 3 {
+		w.WriteHeader(http.StatusNotFound)
+		fmt.Println("Не переданы обязательные параметры!")
+		return fmt.Errorf("Неккоректные параметры запроса!")
+	}
+	typeM, _, _ := params[0], params[1], params[2]
+
+	switch typeM {
+	case "gauge":
+	case "counter":
+	default:
+		w.WriteHeader(http.StatusBadRequest)
+		return fmt.Errorf("Некорректный тип метрики")
+	}
+
+	return nil
 }
