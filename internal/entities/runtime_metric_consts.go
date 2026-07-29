@@ -2,7 +2,7 @@ package entities
 
 const (
 	Alloc         = "Alloc"
-	BuckHashSys   = "BlackBuckHashSys"
+	BuckHashSys   = "BuckHashSys"
 	Frees         = "Frees"
 	GCCPUFraction = "GCCPUFraction"
 	GCSys         = "GCSys"
