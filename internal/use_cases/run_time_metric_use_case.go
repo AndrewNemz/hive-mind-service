@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"fmt"
 	"hiv_mind/internal/repositories"
 	"runtime"
 )
@@ -11,12 +12,17 @@ type IRunTimeMetricUseCase interface {
 }
 
 type RunTimeMetricUseCase struct {
-	RunTimeMetricRepo repositories.IMetricStoragerRepo
+	MetricRepo   repositories.IMetricStoragerRepo
+	MetricSender repositories.IMetricSender
 }
 
-func NewRunTimeMetricUseCase(metricRepo repositories.IMetricStoragerRepo) *RunTimeMetricUseCase {
+func NewRunTimeMetricUseCase(
+	metricRepo repositories.IMetricStoragerRepo,
+	metricSender repositories.IMetricSender,
+) *RunTimeMetricUseCase {
 	return &RunTimeMetricUseCase{
-		RunTimeMetricRepo: metricRepo,
+		MetricRepo:   metricRepo,
+		MetricSender: metricSender,
 	}
 }
 
@@ -25,7 +31,7 @@ func (rmu *RunTimeMetricUseCase) CollectRunTimeMetric() error {
 	runtime.ReadMemStats(rtm)
 
 	metrics := MapRunTimeMetricToMetricEntitySlice(rtm)
-	if err := rmu.RunTimeMetricRepo.StoreMetricSlice(metrics); err != nil {
+	if err := rmu.MetricRepo.StoreMetricSlice(metrics); err != nil {
 		return err
 	}
 
@@ -33,5 +39,14 @@ func (rmu *RunTimeMetricUseCase) CollectRunTimeMetric() error {
 }
 
 func (rmu *RunTimeMetricUseCase) SendRunTimeMetric() error {
+
+	metrics := rmu.MetricRepo.GetAllMetrics()
+	fmt.Println("____________________________________________")
+	fmt.Println(metrics)
+	fmt.Println("____________________________________________")
+	if err := rmu.MetricSender.SendMetrics(metrics); err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -8,11 +8,13 @@ import (
 type AgentProvider struct {
 	Storage              repositories.IMetricStoragerRepo
 	RunTimeMetricUseCase usecases.IRunTimeMetricUseCase
+	MetricSender         repositories.IMetricSender
 }
 
 func NewAgentProvider() *AgentProvider {
 	storage := repositories.NewMemStorage()
-	metricUseCase := usecases.NewRunTimeMetricUseCase(storage)
+	sender := repositories.NewMetricSender()
+	metricUseCase := usecases.NewRunTimeMetricUseCase(storage, sender)
 	return &AgentProvider{
 		Storage:              storage,
 		RunTimeMetricUseCase: metricUseCase,

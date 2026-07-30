@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"hiv_mind/internal/app"
 	"sync"
 	"time"
@@ -48,8 +47,6 @@ func (ah *AgentHandler) HandleRunTimeMetric() error {
 				return
 			case <-ticker.C:
 			}
-
-			fmt.Println(ah.ap.Storage)
 		}
 	}()
 

@@ -64,12 +64,12 @@ func (mh *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(mh.serviceProvider.Storage)
 	w.WriteHeader(http.StatusOK)
 	return
 }
 
 func ValidateParams(params []string, w http.ResponseWriter) error {
-	fmt.Println("Переданные параметры", params)
 	if len(params) < 5 {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Println("Не переданы обязательные параметры!")

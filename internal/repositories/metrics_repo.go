@@ -4,17 +4,20 @@ import (
 	"fmt"
 	"hiv_mind/internal/entities"
 	"math/rand"
+	"sync"
 )
 
 type MemStorage struct {
 	Gauge   map[string]float64
 	Counter map[string]int64
+	Mutex   sync.Mutex
 }
 
 func NewMemStorage() *MemStorage {
 	return &MemStorage{
 		Gauge:   make(map[string]float64),
 		Counter: make(map[string]int64),
+		Mutex:   sync.Mutex{},
 	}
 }
 
@@ -50,4 +53,20 @@ func (ms *MemStorage) StoreMetricSlice(metrics []entities.Metrics) error {
 	ms.Gauge[entities.RandomValue] = rand.Float64()
 
 	return nil
+}
+
+func (ms *MemStorage) GetAllMetrics() []entities.Metrics {
+	var metrics []entities.Metrics
+	ms.Mutex.Lock()
+	defer ms.Mutex.Unlock()
+
+	for metricName, gm := range ms.Gauge {
+		metrics = append(metrics, entities.Metrics{Type: "gauge", Name: metricName, Value: gm})
+	}
+
+	for metricName, cm := range ms.Counter {
+		metrics = append(metrics, entities.Metrics{Type: "counter", Name: metricName, Value: float64(cm)})
+	}
+
+	return metrics
 }
