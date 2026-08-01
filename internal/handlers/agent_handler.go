@@ -9,6 +9,7 @@ import (
 
 const SleepTime = 2
 const reportInterval = 10
+const pollInterval = 2
 
 type AgentHandler struct {
 	ap *app.AgentProvider
@@ -19,8 +20,6 @@ func NewAgentHandler(ap *app.AgentProvider) *AgentHandler {
 		ap: ap,
 	}
 }
-
-const pollInterval = 2
 
 func (ah *AgentHandler) HandleRunTimeMetric() error {
 

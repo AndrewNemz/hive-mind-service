@@ -1,7 +1,6 @@
 package usecases
 
 import (
-	"fmt"
 	"hiv_mind/internal/repositories"
 	"runtime"
 )
@@ -41,9 +40,6 @@ func (rmu *RunTimeMetricUseCase) CollectRunTimeMetric() error {
 func (rmu *RunTimeMetricUseCase) SendRunTimeMetric() error {
 
 	metrics := rmu.MetricRepo.GetAllMetrics()
-	fmt.Println("____________________________________________")
-	fmt.Println(metrics)
-	fmt.Println("____________________________________________")
 	if err := rmu.MetricSender.SendMetrics(metrics); err != nil {
 		return err
 	}
