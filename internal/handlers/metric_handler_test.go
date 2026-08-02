@@ -54,7 +54,7 @@ func TestUpdate(t *testing.T) {
 			request.Header.Set("Content-Type", d.contentType)
 			writer := httptest.NewRecorder()
 
-			handler := NewMetricHandler(serviceProvider)
+			handler, _ := NewMetricHandler(serviceProvider, "./templates")
 			handler.Update(writer, request)
 
 			respone := writer.Result()
