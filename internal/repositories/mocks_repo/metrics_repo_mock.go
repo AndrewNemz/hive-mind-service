@@ -25,3 +25,8 @@ func (msr *MockStorageRepo) GetAllMetrics() []entities.Metrics {
 	msr.HasCalled = true
 	return msr.Metrics
 }
+
+func (msr *MockStorageRepo) GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error) {
+	msr.HasCalled = true
+	return entities.Metrics{Name: mName, Type: mType, Value: 100}, msr.Err
+}

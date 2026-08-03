@@ -7,6 +7,8 @@ import (
 
 type IMetricsUseCase interface {
 	CollectAndStoreMetric(m entities.Metrics) error
+	GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error)
+	GetAllMetrics() []entities.Metrics
 }
 
 type MetricsUseCase struct {
@@ -25,4 +27,17 @@ func (mu *MetricsUseCase) CollectAndStoreMetric(m entities.Metrics) error {
 	}
 
 	return nil
+}
+
+func (mu *MetricsUseCase) GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error) {
+	metric, err := mu.repositories.GetMetricByTypeAndName(mType, mName)
+	if err != nil {
+		return entities.Metrics{}, err
+	}
+	return metric, nil
+}
+
+func (mu *MetricsUseCase) GetAllMetrics() []entities.Metrics {
+	metrics := mu.repositories.GetAllMetrics()
+	return metrics
 }
