@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Метрики сервера</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        table { border-collapse: collapse; width: 100%; max-width: 600px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f4f4f4; }
+    </style>
+</head>
+<body>
+    <h2>Список известных метрик</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Имя</th>
+                <th>Тип</th>
+                <th>Значение</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .}}
+            <tr>
+                <td>{{.Name}}</td>
+                <td>{{.Type}}</td>
+                <td>{{.Value}}</td>
+            </tr>
+            {{else}}
+            <tr>
+                <td colspan="3" style="text-align: center; color: gray;">
+                    Метрики пока не собраны
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</body>
+</html>

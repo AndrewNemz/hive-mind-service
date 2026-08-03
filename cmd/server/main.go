@@ -5,6 +5,8 @@ import (
 	"hiv_mind/internal/app"
 	"hiv_mind/internal/handlers"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -15,11 +17,18 @@ func main() {
 
 func run() error {
 	fmt.Println("Старт сервиса")
+
+	r := chi.NewRouter()
+
 	serviceProvider := app.NewServiceProvider()
-	metricHandler := handlers.NewMetricHandler(serviceProvider)
+	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates")
+	if err != nil {
+		return fmt.Errorf("не удалось загрузить шаблоны: %w", err)
+	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/update/", metricHandler.Update)
+	r.Get("/", metricHandler.Root)
+	r.Get("/value/{type}/{name}", metricHandler.Value)
+	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
 
-	return http.ListenAndServe(`:8080`, mux)
+	return http.ListenAndServe(`:8080`, r)
 }

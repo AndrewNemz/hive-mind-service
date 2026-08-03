@@ -3,6 +3,7 @@ package repositories
 import (
 	"fmt"
 	"hiv_mind/internal/entities"
+	repoerrors "hiv_mind/internal/errors"
 	"math/rand"
 	"sync"
 )
@@ -22,6 +23,9 @@ func NewMemStorage() *MemStorage {
 }
 
 func (ms *MemStorage) StoreMetric(m entities.Metrics) error {
+	ms.Mutex.Lock()
+	defer ms.Mutex.Unlock()
+
 	switch m.Type {
 	case "gauge":
 		ms.Gauge[m.Name] = m.Value
@@ -35,6 +39,9 @@ func (ms *MemStorage) StoreMetric(m entities.Metrics) error {
 }
 
 func (ms *MemStorage) StoreMetricSlice(metrics []entities.Metrics) error {
+	ms.Mutex.Lock()
+	defer ms.Mutex.Unlock()
+
 	for _, m := range metrics {
 		switch m.Type {
 		case "gauge":
@@ -56,10 +63,10 @@ func (ms *MemStorage) StoreMetricSlice(metrics []entities.Metrics) error {
 }
 
 func (ms *MemStorage) GetAllMetrics() []entities.Metrics {
-	var metrics []entities.Metrics
 	ms.Mutex.Lock()
 	defer ms.Mutex.Unlock()
 
+	var metrics []entities.Metrics
 	for metricName, gm := range ms.Gauge {
 		metrics = append(metrics, entities.Metrics{Type: "gauge", Name: metricName, Value: gm})
 	}
@@ -69,4 +76,25 @@ func (ms *MemStorage) GetAllMetrics() []entities.Metrics {
 	}
 
 	return metrics
+}
+
+func (ms *MemStorage) GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error) {
+	ms.Mutex.Lock()
+	defer ms.Mutex.Unlock()
+
+	var mValue float64
+	var valueI int64
+	var ok bool
+
+	if mType == entities.GaugeType {
+		mValue, ok = ms.Gauge[mName]
+	} else {
+		valueI, ok = ms.Counter[mName]
+		mValue = float64(valueI)
+	}
+	if !ok {
+		return entities.Metrics{}, repoerrors.ErrNotFoundMetric
+	}
+
+	return entities.Metrics{Name: mName, Type: mType, Value: mValue}, nil
 }

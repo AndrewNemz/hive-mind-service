@@ -6,43 +6,55 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-resty/resty/v2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUpdate(t *testing.T) {
 	serviceProvider := app.NewServiceProvider()
+	metricHandler, err := NewMetricHandler(serviceProvider, "../../templates")
+	require.NoError(t, err, "Не удалось создать хендлер")
+
+	r := chi.NewRouter()
+	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
+
+	srv := httptest.NewServer(r)
+	defer srv.Close()
+
 	data := []struct {
 		tName        string
 		method       string
-		url          string
+		path         string
 		contentType  string
 		responseCode int
 	}{
 		{
 			tName:        "Valid_POST_Request",
 			method:       http.MethodPost,
-			url:          "http://localhost:8080/update/gauge/GCSys/1.85424e+06",
+			path:         "/update/gauge/GCSys/1.85424e+06",
 			contentType:  "text/plain",
 			responseCode: http.StatusOK,
 		},
 		{
 			tName:        "Request_With_NOT_ALLOWDED_METHOD",
 			method:       http.MethodGet,
-			url:          "http://localhost:8080/update/gauge/GCSys/1.85424e+06",
+			path:         "/update/gauge/GCSys/1.85424e+06",
 			contentType:  "text/plain",
 			responseCode: http.StatusMethodNotAllowed,
 		},
 		{
 			tName:        "BAD_REQUEST_WITHOUT_VALUE",
 			method:       http.MethodPost,
-			url:          "http://localhost:8080/update/gauge/GCSys/",
+			path:         "/update/gauge/GCSys/",
 			contentType:  "text/plain",
-			responseCode: http.StatusBadRequest,
+			responseCode: http.StatusNotFound,
 		},
 		{
 			tName:        "BAD_REQUEST_WITH_NOT_ALLOWDED_METRIC_TYPE",
 			method:       http.MethodPost,
-			url:          "http://localhost:8080/update/notallowded/GCSys/123",
+			path:         "/update/notallowded/GCSys/123",
 			contentType:  "text/plain",
 			responseCode: http.StatusBadRequest,
 		},
@@ -50,17 +62,15 @@ func TestUpdate(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(d.tName, func(t *testing.T) {
-			request := httptest.NewRequest(d.method, d.url, nil)
-			request.Header.Set("Content-Type", d.contentType)
-			writer := httptest.NewRecorder()
+			fullURL := srv.URL + d.path
 
-			handler := NewMetricHandler(serviceProvider)
-			handler.Update(writer, request)
+			client := resty.New().R()
+			client.Method = d.method
+			client.URL = fullURL
+			response, err := client.SetHeader("Content-Type", d.contentType).Send()
 
-			respone := writer.Result()
-			defer respone.Body.Close()
-
-			assert.Equal(t, d.responseCode, respone.StatusCode)
+			assert.NoError(t, err, "error making HTTP request")
+			assert.Equal(t, d.responseCode, response.StatusCode())
 		})
 	}
 }
