@@ -7,10 +7,6 @@ import (
 	"time"
 )
 
-const SleepTime = 2
-const reportInterval = 10
-const pollInterval = 2
-
 type AgentHandler struct {
 	ap *app.AgentProvider
 }
@@ -32,7 +28,7 @@ func (ah *AgentHandler) HandleRunTimeMetric() error {
 	go func() {
 		defer wg.Done()
 
-		ticker := time.NewTicker(pollInterval * time.Second)
+		ticker := time.NewTicker(time.Duration(ah.ap.PollInterval) * time.Second)
 		defer ticker.Stop()
 
 		for {
@@ -52,7 +48,7 @@ func (ah *AgentHandler) HandleRunTimeMetric() error {
 	go func() {
 		defer wg.Done()
 
-		ticker := time.NewTicker(reportInterval * time.Second)
+		ticker := time.NewTicker(time.Duration(ah.ap.ReportInterval) * time.Second)
 		defer ticker.Stop()
 
 		for {
