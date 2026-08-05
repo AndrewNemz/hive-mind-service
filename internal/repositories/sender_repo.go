@@ -8,12 +8,14 @@ import (
 )
 
 type MetricSender struct {
-	client *resty.Client
+	client  *resty.Client
+	Adresss string
 }
 
-func NewMetricSender() *MetricSender {
+func NewMetricSender(adresss string) *MetricSender {
 	return &MetricSender{
-		client: resty.New().SetBaseURL("http://localhost:8080/update/"),
+		client:  resty.New().SetBaseURL(fmt.Sprintf("http://%s/update/", adresss)),
+		Adresss: adresss,
 	}
 }
 
