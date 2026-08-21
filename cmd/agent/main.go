@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"hiv_mind/internal/app"
 	"hiv_mind/internal/handlers"
+	"hiv_mind/pkg/logger"
+
+	"go.uber.org/zap"
 )
 
 var (
@@ -33,7 +36,14 @@ func run() error {
 	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
 	hundler := handlers.NewAgentHandler(agentProvider)
 
+	if err := logger.Initialize("info"); err != nil {
+		return fmt.Errorf("init logger: %w", err)
+	}
+	lg := logger.Get()
+	defer lg.Sync()
+
 	if err := hundler.HandleRunTimeMetric(); err != nil {
+		lg.Info("Failed in Handle Request", zap.Error(err))
 		return err
 	}
 
