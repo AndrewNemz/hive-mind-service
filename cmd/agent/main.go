@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strconv"
+
 	"hiv_mind/internal/app"
 	"hiv_mind/internal/handlers"
 	"hiv_mind/pkg/logger"
@@ -33,8 +36,22 @@ func main() {
 
 func run() error {
 	flag.Parse()
-	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
-	hundler := handlers.NewAgentHandler(agentProvider)
+
+	if envAdress := os.Getenv("ADDRESS"); envAdress != "" {
+		*adresss = envAdress
+	}
+
+	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+		if val, err := strconv.Atoi(envReportInterval); err == nil {
+			*reportInterval = val
+		}
+	}
+
+	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
+		if val, err := strconv.Atoi(envPollInterval); err == nil {
+			*pollInterval = val
+		}
+	}
 
 	if err := logger.Initialize("info"); err != nil {
 		return fmt.Errorf("init logger: %w", err)
@@ -42,9 +59,11 @@ func run() error {
 	lg := logger.Get()
 	defer lg.Sync()
 
-	if err := hundler.HandleRunTimeMetric(); err != nil {
+	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
+	handler := handlers.NewAgentHandler(agentProvider)
+
+	if err := handler.HandleRunTimeMetric(); err != nil {
 		lg.Info("Failed in Handle Request", zap.Error(err))
-		return err
 	}
 
 	return nil
