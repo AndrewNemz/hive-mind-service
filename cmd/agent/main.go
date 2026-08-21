@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"hiv_mind/internal/app"
 	"hiv_mind/internal/handlers"
+	"os"
+	"strconv"
 )
 
 var (
@@ -30,10 +32,27 @@ func main() {
 
 func run() error {
 	flag.Parse()
-	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
-	hundler := handlers.NewAgentHandler(agentProvider)
 
-	if err := hundler.HandleRunTimeMetric(); err != nil {
+	if envAdress := os.Getenv("ADDRESS"); envAdress != "" {
+		*adresss = envAdress
+	}
+
+	if envReportInterval := os.Getenv("REPORT_INTERVAL"); envReportInterval != "" {
+		if val, err := strconv.Atoi(envReportInterval); err == nil {
+			*reportInterval = val
+		}
+	}
+
+	if envPollInterval := os.Getenv("POLL_INTERVAL"); envPollInterval != "" {
+		if val, err := strconv.Atoi(envPollInterval); err == nil {
+			*pollInterval = val
+		}
+	}
+
+	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
+	handler := handlers.NewAgentHandler(agentProvider)
+
+	if err := handler.HandleRunTimeMetric(); err != nil {
 		return err
 	}
 

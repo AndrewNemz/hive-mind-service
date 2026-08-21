@@ -6,6 +6,7 @@ import (
 	"hiv_mind/internal/app"
 	"hiv_mind/internal/handlers"
 	"net/http"
+	"os"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -38,5 +39,8 @@ func run() error {
 	r.Get("/value/{type}/{name}", metricHandler.Value)
 	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
 
+	if envAdress := os.Getenv("ADDRESS"); envAdress != "" {
+		adresss = envAdress
+	}
 	return http.ListenAndServe(adresss, r)
 }
