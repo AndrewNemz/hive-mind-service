@@ -6,12 +6,14 @@ import (
 	"hiv_mind/internal/app"
 	"hiv_mind/internal/entities"
 	repoerrors "hiv_mind/internal/errors"
+	"hiv_mind/pkg/logger"
 	"html/template"
 	"net/http"
 	"path/filepath"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
 type MetricHandler struct {
@@ -33,12 +35,15 @@ func NewMetricHandler(sp *app.ServiceProvider, templatesDir string) (*MetricHand
 }
 
 func (mh *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
+	lg := logger.Get()
+
 	if r.Method != http.MethodPost {
+		lg.Info(fmt.Sprintf("Request Method %s is not Allowded", r.Method))
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
 
-	metric, err := ValidateParams(w, r)
+	metric, err := ValidateParams(w, r, lg)
 	if err != nil {
 		return
 	}
@@ -54,7 +59,7 @@ func (mh *MetricHandler) Update(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-func ValidateParams(w http.ResponseWriter, r *http.Request) (entities.Metrics, error) {
+func ValidateParams(w http.ResponseWriter, r *http.Request, lg *zap.Logger) (entities.Metrics, error) {
 
 	metricType := chi.URLParam(r, "type")
 	metricName := chi.URLParam(r, "name")
@@ -62,7 +67,7 @@ func ValidateParams(w http.ResponseWriter, r *http.Request) (entities.Metrics, e
 
 	if metricType == "" || metricName == "" || metricValue == "" {
 		w.WriteHeader(http.StatusNotFound)
-		fmt.Println("Не переданы обязательные параметры!")
+		lg.Info("Не переданы обязательные параметры!")
 		return entities.Metrics{}, fmt.Errorf("Неккоректные параметры запроса!")
 	}
 
@@ -72,6 +77,7 @@ func ValidateParams(w http.ResponseWriter, r *http.Request) (entities.Metrics, e
 	case entities.GaugeType:
 		value, err := strconv.ParseFloat(metricValue, 64)
 		if err != nil {
+			lg.Info("Ошибка обработки метрики!")
 			w.WriteHeader(http.StatusBadRequest)
 			return entities.Metrics{}, fmt.Errorf("Ошибка обработки метрики!")
 		}
@@ -80,12 +86,14 @@ func ValidateParams(w http.ResponseWriter, r *http.Request) (entities.Metrics, e
 	case entities.CounterType:
 		value, err := strconv.ParseInt(metricValue, 10, 64)
 		if err != nil {
+			lg.Info("Ошибка обработки метрики!")
 			w.WriteHeader(http.StatusBadRequest)
 			return entities.Metrics{}, fmt.Errorf("Ошибка обработки метрики!")
 		}
 		metric.Value = float64(value)
 		metric.Type = metricType
 	default:
+		lg.Info("Некорректный тип метрики")
 		w.WriteHeader(http.StatusBadRequest)
 		return entities.Metrics{}, fmt.Errorf("Некорректный тип метрики")
 	}
@@ -121,10 +129,12 @@ func (mh *MetricHandler) Value(w http.ResponseWriter, r *http.Request) {
 
 func (mh *MetricHandler) Root(w http.ResponseWriter, r *http.Request) {
 
+	lg := logger.Get()
 	metrics := mh.serviceProvider.MetricUseCase.GetAllMetrics()
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := mh.Template.Execute(w, metrics); err != nil {
+		lg.Info("Ошибка генерации HTML")
 		http.Error(w, "Ошибка генерации HTML", http.StatusInternalServerError)
 		return
 	}

@@ -3,6 +3,7 @@ package repositories
 import (
 	"fmt"
 	"hiv_mind/internal/entities"
+	"hiv_mind/pkg/logger"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -21,17 +22,16 @@ func NewMetricSender(adresss string) *MetricSender {
 
 func (ms *MetricSender) SendMetrics(metrics []entities.Metrics) error {
 
+	lg := logger.Get()
 	for _, m := range metrics {
 		url := fmt.Sprintf("%s/%s/%g", m.Type, m.Name, m.Value)
-		fmt.Println(url)
+		lg.Info(url)
 
-		response, err := ms.client.R().SetHeader(`Content-Type`, "text/plain").Post(url)
+		_, err := ms.client.R().SetHeader(`Content-Type`, "text/plain").Post(url)
 		if err != nil {
 			fmt.Printf("Ошибка отправки метрики %s: %v\n", m.Name, err)
 			continue
 		}
-
-		fmt.Println(response)
 	}
 
 	return nil
