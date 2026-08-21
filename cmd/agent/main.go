@@ -3,10 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
-	"hiv_mind/internal/app"
-	"hiv_mind/internal/handlers"
 	"os"
 	"strconv"
+
+	"hiv_mind/internal/app"
+	"hiv_mind/internal/handlers"
+	"hiv_mind/pkg/logger"
+
+	"go.uber.org/zap"
 )
 
 var (
@@ -49,11 +53,17 @@ func run() error {
 		}
 	}
 
+	if err := logger.Initialize("info"); err != nil {
+		return fmt.Errorf("init logger: %w", err)
+	}
+	lg := logger.Get()
+	defer lg.Sync()
+
 	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
 	handler := handlers.NewAgentHandler(agentProvider)
 
 	if err := handler.HandleRunTimeMetric(); err != nil {
-		return err
+		lg.Info("Failed in Handle Request", zap.Error(err))
 	}
 
 	return nil
