@@ -9,14 +9,21 @@ type AgentProvider struct {
 	Storage              repositories.IMetricStoragerRepo
 	RunTimeMetricUseCase usecases.IRunTimeMetricUseCase
 	MetricSender         repositories.IMetricSender
+
+	Adresss        string
+	ReportInterval int
+	PollInterval   int
 }
 
-func NewAgentProvider() *AgentProvider {
+func NewAgentProvider(adresss string, reportInterval, pollInterval int) *AgentProvider {
 	storage := repositories.NewMemStorage()
-	sender := repositories.NewMetricSender()
+	sender := repositories.NewMetricSender(adresss)
 	metricUseCase := usecases.NewRunTimeMetricUseCase(storage, sender)
 	return &AgentProvider{
 		Storage:              storage,
 		RunTimeMetricUseCase: metricUseCase,
+		Adresss:              adresss,
+		ReportInterval:       reportInterval,
+		PollInterval:         pollInterval,
 	}
 }
