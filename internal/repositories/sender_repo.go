@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"encoding/json"
 	"fmt"
 	"hiv_mind/internal/entities"
 	"hiv_mind/pkg/logger"
@@ -15,7 +16,7 @@ type MetricSender struct {
 
 func NewMetricSender(adresss string) *MetricSender {
 	return &MetricSender{
-		client:  resty.New().SetBaseURL(fmt.Sprintf("http://%s/update/", adresss)),
+		client:  resty.New().SetBaseURL(fmt.Sprintf("http://%s/update", adresss)).SetHeader(`Content-Type`, "application/json"),
 		Adresss: adresss,
 	}
 }
@@ -24,12 +25,16 @@ func (ms *MetricSender) SendMetrics(metrics []entities.Metrics) error {
 
 	lg := logger.Get()
 	for _, m := range metrics {
-		url := fmt.Sprintf("%s/%s/%g", m.Type, m.Name, m.Value)
-		lg.Info(url)
 
-		_, err := ms.client.R().SetHeader(`Content-Type`, "text/plain").Post(url)
+		jsonData, err := json.Marshal(m)
 		if err != nil {
-			fmt.Printf("Ошибка отправки метрики %s: %v\n", m.Name, err)
+			lg.Sugar().Errorf("Ошибка декордирования %s: %v\n", m.ID, err)
+			continue
+		}
+
+		_, err = ms.client.R().SetBody(jsonData).Post("/")
+		if err != nil {
+			lg.Sugar().Errorf("Ошибка отправки метрики %s: %v\n", m.ID, err)
 			continue
 		}
 	}

@@ -22,15 +22,15 @@ func NewMemStorage() *MemStorage {
 	}
 }
 
-func (ms *MemStorage) StoreMetric(m entities.Metrics) error {
+func (ms *MemStorage) StoreMetric(m *entities.Metrics) error {
 	ms.Mutex.Lock()
 	defer ms.Mutex.Unlock()
 
-	switch m.Type {
+	switch m.MType {
 	case "gauge":
-		ms.Gauge[m.Name] = m.Value
+		ms.Gauge[m.ID] = *m.Value
 	case "counter":
-		ms.Counter[m.Name] += int64(m.Value)
+		ms.Counter[m.ID] += int64(*m.Delta)
 	default:
 		return fmt.Errorf("В репозиторий передан неожиданный формат метрики!")
 	}
@@ -43,11 +43,11 @@ func (ms *MemStorage) StoreMetricSlice(metrics []entities.Metrics) error {
 	defer ms.Mutex.Unlock()
 
 	for _, m := range metrics {
-		switch m.Type {
+		switch m.MType {
 		case "gauge":
-			ms.Gauge[m.Name] = m.Value
+			ms.Gauge[m.ID] = *m.Value
 		case "counter":
-			ms.Counter[m.Name] += int64(m.Value)
+			ms.Counter[m.ID] += int64(*m.Delta)
 		default:
 			return fmt.Errorf("В репозиторий передан неожиданный формат метрики!")
 		}
@@ -68,17 +68,19 @@ func (ms *MemStorage) GetAllMetrics() []entities.Metrics {
 
 	var metrics []entities.Metrics
 	for metricName, gm := range ms.Gauge {
-		metrics = append(metrics, entities.Metrics{Type: "gauge", Name: metricName, Value: gm})
+		val := gm
+		metrics = append(metrics, entities.Metrics{MType: "gauge", ID: metricName, Value: &val})
 	}
 
 	for metricName, cm := range ms.Counter {
-		metrics = append(metrics, entities.Metrics{Type: "counter", Name: metricName, Value: float64(cm)})
+		val := cm
+		metrics = append(metrics, entities.Metrics{MType: "counter", ID: metricName, Delta: &val})
 	}
 
 	return metrics
 }
 
-func (ms *MemStorage) GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error) {
+func (ms *MemStorage) GetMetricByTypeAndName(metric *entities.Metrics) error {
 	ms.Mutex.Lock()
 	defer ms.Mutex.Unlock()
 
@@ -86,15 +88,19 @@ func (ms *MemStorage) GetMetricByTypeAndName(mType, mName string) (entities.Metr
 	var valueI int64
 	var ok bool
 
-	if mType == entities.GaugeType {
-		mValue, ok = ms.Gauge[mName]
+	if metric.MType == entities.GaugeType {
+		mValue, ok = ms.Gauge[metric.ID]
+		if !ok {
+			return repoerrors.ErrNotFoundMetric
+		}
+		metric.Value = &mValue
 	} else {
-		valueI, ok = ms.Counter[mName]
-		mValue = float64(valueI)
-	}
-	if !ok {
-		return entities.Metrics{}, repoerrors.ErrNotFoundMetric
+		valueI, ok = ms.Counter[metric.ID]
+		if !ok {
+			return repoerrors.ErrNotFoundMetric
+		}
+		metric.Delta = &valueI
 	}
 
-	return entities.Metrics{Name: mName, Type: mType, Value: mValue}, nil
+	return nil
 }
