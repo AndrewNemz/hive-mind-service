@@ -107,6 +107,7 @@ func (mh *MetricHandler) Root(w http.ResponseWriter, r *http.Request) {
 	metrics := mh.serviceProvider.MetricUseCase.GetAllMetrics()
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 	if err := mh.Template.Execute(w, metrics); err != nil {
 		lg.Error("Ошибка генерации HTML", zap.Error(err))
 		http.Error(w, "Ошибка генерации HTML", http.StatusInternalServerError)

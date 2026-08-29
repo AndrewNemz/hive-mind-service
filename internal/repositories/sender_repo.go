@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hiv_mind/internal/entities"
+	compressdata "hiv_mind/pkg/compress_data"
 	"hiv_mind/pkg/logger"
 
 	"github.com/go-resty/resty/v2"
@@ -16,7 +17,10 @@ type MetricSender struct {
 
 func NewMetricSender(adresss string) *MetricSender {
 	return &MetricSender{
-		client:  resty.New().SetBaseURL(fmt.Sprintf("http://%s/update", adresss)).SetHeader(`Content-Type`, "application/json"),
+		client: resty.New().
+			SetBaseURL(fmt.Sprintf("http://%s/update", adresss)).
+			SetHeader("Content-Encoding", "gzip").
+			SetHeader(`Content-Type`, "application/json"),
 		Adresss: adresss,
 	}
 }
@@ -32,7 +36,13 @@ func (ms *MetricSender) SendMetrics(metrics []entities.Metrics) error {
 			continue
 		}
 
-		_, err = ms.client.R().SetBody(jsonData).Post("/")
+		compressData, err := compressdata.Compress(jsonData)
+		if err != nil {
+			lg.Sugar().Errorf("Ошибка сжатия данных %s: %v\n", m.ID, err)
+			continue
+		}
+
+		_, err = ms.client.R().SetBody(compressData).Post("/")
 		if err != nil {
 			lg.Sugar().Errorf("Ошибка отправки метрики %s: %v\n", m.ID, err)
 			continue

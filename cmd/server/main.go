@@ -45,6 +45,7 @@ func run() error {
 	}
 
 	// middlewares
+	r.Use(middleware.GzipMiddleware)
 	r.Use(middleware.Logging)
 
 	// Routes
