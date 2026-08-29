@@ -11,12 +11,13 @@ import (
 	"os"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 )
 
-var adresss string
+var adress string
 
 func init() {
-	flag.StringVar(&adresss, "a", "localhost:8080", "отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080)")
+	flag.StringVar(&adress, "a", "localhost:8080", "отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080)")
 }
 
 func main() {
@@ -26,34 +27,34 @@ func main() {
 }
 
 func run() error {
-	fmt.Println("Старт сервиса")
-	flag.Parse()
-
-	r := chi.NewRouter()
-
-	serviceProvider := app.NewServiceProvider()
-	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates")
-	if err != nil {
-		return fmt.Errorf("не удалось загрузить шаблоны: %w", err)
-	}
-
 	if err := logger.Initialize("info"); err != nil {
 		return fmt.Errorf("init logger: %w", err)
 	}
 	lg := logger.Get()
 	defer lg.Sync()
 
+	flag.Parse()
+	lg.Sugar().Info("Старт сервиса", zap.String("adress", adress))
+
+	r := chi.NewRouter()
+	serviceProvider := app.NewServiceProvider()
+	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates")
+	if err != nil {
+		lg.Error("не удалось загрузить шаблоны", zap.Error(err))
+		return err
+	}
+
 	// middlewares
-	r.Use(middleware.RequestInfo)
-	r.Use(middleware.ResponseInfo)
+	r.Use(middleware.GzipMiddleware)
+	r.Use(middleware.Logging)
 
 	// Routes
 	r.Get("/", metricHandler.Root)
-	r.Get("/value/{type}/{name}", metricHandler.Value)
-	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
+	r.Post("/value/", metricHandler.Value)
+	r.Post("/update/", metricHandler.Update)
 
 	if envAdress := os.Getenv("ADDRESS"); envAdress != "" {
-		adresss = envAdress
+		adress = envAdress
 	}
-	return http.ListenAndServe(adresss, r)
+	return http.ListenAndServe(adress, r)
 }
