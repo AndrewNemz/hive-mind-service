@@ -7,4 +7,6 @@ type IMetricStoragerRepo interface {
 	StoreMetricSlice(metrics []entities.Metrics) error
 	GetAllMetrics() []entities.Metrics
 	GetMetricByTypeAndName(metric *entities.Metrics) error
+	LoadMetricFromFile(filename string) error
+	SaveToFile(filename string) error
 }
