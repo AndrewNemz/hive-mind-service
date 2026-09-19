@@ -12,13 +12,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var storeInterval, storageFile = 3, "/tmp/metrics-db.json"
+
 func TestUpdate(t *testing.T) {
-	serviceProvider := app.NewServiceProvider()
+	serviceProvider := app.NewServiceProvider(storeInterval, storageFile)
 	metricHandler, err := NewMetricHandler(serviceProvider, "../../templates")
 	require.NoError(t, err, "Не удалось создать хендлер")
 
 	r := chi.NewRouter()
-	r.Post("/update/{type}/{name}/{value}", metricHandler.Update)
+	r.Post("/update/", metricHandler.Update)
 
 	srv := httptest.NewServer(r)
 	defer srv.Close()
@@ -28,34 +30,38 @@ func TestUpdate(t *testing.T) {
 		method       string
 		path         string
 		contentType  string
+		content      []byte
 		responseCode int
 	}{
 		{
 			tName:        "Valid_POST_Request",
 			method:       http.MethodPost,
-			path:         "/update/gauge/GCSys/1.85424e+06",
-			contentType:  "text/plain",
+			path:         "/update/",
+			content:      []byte(`{"type": "gauge", "id": "GCSys", "value": 1.85424e+06}`),
+			contentType:  "application/json",
 			responseCode: http.StatusOK,
 		},
 		{
 			tName:        "Request_With_NOT_ALLOWDED_METHOD",
 			method:       http.MethodGet,
-			path:         "/update/gauge/GCSys/1.85424e+06",
-			contentType:  "text/plain",
+			path:         "/update/",
+			contentType:  "application/json",
 			responseCode: http.StatusMethodNotAllowed,
 		},
 		{
 			tName:        "BAD_REQUEST_WITHOUT_VALUE",
 			method:       http.MethodPost,
-			path:         "/update/gauge/GCSys/",
-			contentType:  "text/plain",
+			path:         "/update/",
+			content:      []byte(`{"type": "gauge", "id": "GCSys"}`),
+			contentType:  "application/json",
 			responseCode: http.StatusNotFound,
 		},
 		{
 			tName:        "BAD_REQUEST_WITH_NOT_ALLOWDED_METRIC_TYPE",
 			method:       http.MethodPost,
-			path:         "/update/notallowded/GCSys/123",
-			contentType:  "text/plain",
+			path:         "/update/",
+			content:      []byte(`{"type": "notallowded", "id": "GCSys", "delta": 1.85424e+06}`),
+			contentType:  "application/json",
 			responseCode: http.StatusBadRequest,
 		},
 	}
@@ -67,7 +73,7 @@ func TestUpdate(t *testing.T) {
 			client := resty.New().R()
 			client.Method = d.method
 			client.URL = fullURL
-			response, err := client.SetHeader("Content-Type", d.contentType).Send()
+			response, err := client.SetHeader("Content-Type", d.contentType).SetBody(d.content).Send()
 
 			assert.NoError(t, err, "error making HTTP request")
 			assert.Equal(t, d.responseCode, response.StatusCode())

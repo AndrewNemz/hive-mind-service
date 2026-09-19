@@ -28,5 +28,15 @@ func (msr *MockStorageRepo) GetAllMetrics() []entities.Metrics {
 
 func (msr *MockStorageRepo) GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error) {
 	msr.HasCalled = true
-	return entities.Metrics{Name: mName, Type: mType, Value: 100}, msr.Err
+	var delta int64 = 10
+	return entities.Metrics{ID: "123", MType: entities.CounterType, Delta: &delta}, msr.Err
+}
+
+func (msr *MockStorageRepo) LoadMetricFromFile(filename string) error {
+	msr.HasCalled = true
+	return nil
+}
+
+func (msr *MockStorageRepo) SaveToFile(filename string) error {
+	return nil
 }
