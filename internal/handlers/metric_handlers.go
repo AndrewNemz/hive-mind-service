@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"hiv_mind/internal/app"
@@ -113,4 +114,24 @@ func (mh *MetricHandler) Root(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка генерации HTML", http.StatusInternalServerError)
 		return
 	}
+}
+
+func (mh *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
+	lg := logger.Get()
+
+	if r.Method != http.MethodGet {
+		lg.Info("Request method not allowed", zap.String("method", r.Method))
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	err := mh.serviceProvider.DB.PingContext(context.Background())
+	if err != nil {
+		lg.Error("DB PostgreSQL недоступна", zap.Error(err))
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	return
 }
