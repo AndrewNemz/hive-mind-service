@@ -9,6 +9,7 @@ import (
 	"hiv_mind/internal/handlers"
 	"hiv_mind/pkg/logger"
 	"hiv_mind/pkg/middleware"
+	"hiv_mind/pkg/postgresql"
 	"net/http"
 	"os"
 	"os/signal"
@@ -24,12 +25,14 @@ var adress string
 var storeInterval int
 var storageFile string
 var restoreValues bool
+var postgreDSN string
 
 func init() {
 	flag.StringVar(&adress, "a", "localhost:8080", "отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080)")
 	flag.IntVar(&storeInterval, "i", 300, "интервал времени в секундах, по истечении которого текущие показания сервера сохраняются на диск")
 	flag.StringVar(&storageFile, "f", "/tmp/metrics-db.json", "полное имя файла, куда сохраняются текущие значения")
 	flag.BoolVar(&restoreValues, "r", true, "булево значение (true/false), определяющее, загружать или нет ранее сохранённые значения из указанного файла при старте сервера")
+	flag.StringVar(&postgreDSN, "d", "", "URL для подключения к PostgreSQL")
 }
 
 func main() {
@@ -55,10 +58,23 @@ func run() error {
 		zap.Int("store_interval_sec", storeInterval),
 		zap.String("storage_file", storageFile),
 		zap.Bool("restore", restoreValues),
+		zap.String("postgreDSN", postgreDSN),
 	)
 
+	postgreSQLDB, err := postgresql.NewPostgreSQL(context.Background(), postgreDSN, postgresql.PoolConfig{
+		MaxOpenConns:    25,
+		MinConns:        5,
+		MaxConnLifetime: 30 * time.Minute,
+		MaxConnIdleTime: 10 * time.Minute,
+	})
+	if err != nil {
+		lg.Fatal("Не удалось подключиться к PostgreSQL", zap.Error(err))
+	} else {
+		defer postgreSQLDB.Close()
+	}
+
 	r := chi.NewRouter()
-	serviceProvider := app.NewServiceProvider(storeInterval, storageFile)
+	serviceProvider := app.NewServiceProvider(storeInterval, storageFile, postgreSQLDB)
 	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates")
 	if err != nil {
 		lg.Error("не удалось загрузить шаблоны", zap.Error(err))
@@ -81,6 +97,7 @@ func run() error {
 	r.Get("/", metricHandler.Root)
 	r.Post("/value/", metricHandler.Value)
 	r.Post("/update/", metricHandler.Update)
+	r.Get("/ping", metricHandler.Ping)
 
 	server := &http.Server{
 		Addr:    adress,
@@ -167,6 +184,10 @@ func GetEnvironment() error {
 
 	if envAdress := os.Getenv("ADDRESS"); envAdress != "" {
 		adress = envAdress
+	}
+
+	if envpostgreDSN := os.Getenv("DATABASE_DSN"); envpostgreDSN != "" {
+		postgreDSN = envpostgreDSN
 	}
 
 	return nil
