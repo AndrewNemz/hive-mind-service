@@ -17,17 +17,17 @@ func TestMetricUseCase(t *testing.T) {
 	}{
 		{
 			tName: "Test_Method_CollectAndStoreMetric_Counter_When_OK",
-			metic: entities.Metrics{Type: entities.GaugeType, Name: "Alloc", Value: 12.0},
+			metic: entities.Metrics{MType: entities.CounterType, ID: "Alloc", Delta: &delta},
 			err:   nil,
 		},
 		{
 			tName: "Test_Method_CollectAndStoreMetric_Gauge_When_OK",
-			metic: entities.Metrics{Type: entities.CounterType, Name: "Alloc", Value: 10},
+			metic: entities.Metrics{MType: entities.GaugeType, ID: "Alloc", Value: &value},
 			err:   nil,
 		},
 		{
 			tName: "Test_Method_CollectAndStoreMetric_When_Invalid_Type",
-			metic: entities.Metrics{Type: "InvalidType", Name: "Alloc", Value: 10},
+			metic: entities.Metrics{MType: "InvalidType", ID: "Alloc", Value: &value},
 			err:   fmt.Errorf("В репозиторий передан неожиданный формат метрики!"),
 		},
 	}
@@ -37,7 +37,7 @@ func TestMetricUseCase(t *testing.T) {
 			repo := repositories.NewMemStorage()
 			usecase := NewMetricUseCase(repo)
 
-			err := usecase.CollectAndStoreMetric(d.metic)
+			err := usecase.CollectAndStoreMetric(&d.metic)
 
 			if err != nil {
 				assert.EqualError(t, d.err, err.Error())
