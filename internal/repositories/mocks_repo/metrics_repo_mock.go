@@ -9,9 +9,9 @@ type MockStorageRepo struct {
 	Err       error
 }
 
-func (msr *MockStorageRepo) StoreMetric(m entities.Metrics) error {
+func (msr *MockStorageRepo) StoreMetric(m *entities.Metrics) error {
 	msr.HasCalled = true
-	msr.Metric = m
+	msr.Metric = *m
 	return msr.Err
 }
 
@@ -26,7 +26,16 @@ func (msr *MockStorageRepo) GetAllMetrics() []entities.Metrics {
 	return msr.Metrics
 }
 
-func (msr *MockStorageRepo) GetMetricByTypeAndName(mType, mName string) (entities.Metrics, error) {
+func (msr *MockStorageRepo) GetMetricByTypeAndName(metric *entities.Metrics) error {
 	msr.HasCalled = true
-	return entities.Metrics{Name: mName, Type: mType, Value: 100}, msr.Err
+	return msr.Err
+}
+
+func (msr *MockStorageRepo) LoadMetricFromFile(filename string) error {
+	msr.HasCalled = true
+	return nil
+}
+
+func (msr *MockStorageRepo) SaveToFile(filename string) error {
+	return nil
 }

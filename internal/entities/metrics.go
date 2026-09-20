@@ -4,7 +4,8 @@ type Gauge float64
 type Counter int64
 
 type Metrics struct {
-	Type  string
-	Name  string
-	Value float64
+	ID    string   `json:"id"`
+	MType string   `json:"type"`
+	Delta *int64   `json:"delta,omitempty"`
+	Value *float64 `json:"value,omitempty"`
 }

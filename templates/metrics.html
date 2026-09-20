@@ -18,14 +18,16 @@
                 <th>Имя</th>
                 <th>Тип</th>
                 <th>Значение</th>
+                <th>Дельта</th>
             </tr>
         </thead>
         <tbody>
             {{range .}}
             <tr>
-                <td>{{.Name}}</td>
-                <td>{{.Type}}</td>
+                <td>{{.ID}}</td>
+                <td>{{.MType}}</td>
                 <td>{{.Value}}</td>
+                <td>{{.Delta}}</td>
             </tr>
             {{else}}
             <tr>

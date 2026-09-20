@@ -9,6 +9,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var delta int64 = 12
+var value float64 = 10.0
+
 func TestRunTimeMetricUseCaseMethodCollectRunTimeMetric(t *testing.T) {
 	data := []struct {
 		tName   string
@@ -18,8 +21,8 @@ func TestRunTimeMetricUseCaseMethodCollectRunTimeMetric(t *testing.T) {
 		{
 			tName: "Test_CollectRunTimeMetric_When_OK",
 			metrics: []entities.Metrics{
-				{Type: entities.CounterType, Name: "Alloc", Value: 10},
-				{Type: entities.GaugeType, Name: "Alloc", Value: 12.0},
+				{ID: "Alloc", MType: entities.CounterType, Value: &value},
+				{ID: "Alloc", MType: entities.GaugeType, Delta: &delta},
 			},
 			err: nil,
 		},
@@ -61,8 +64,8 @@ func TestSendRunTimeMetric(t *testing.T) {
 		{
 			tName: "Test_SendRunTimeMetric_When_OK",
 			metrics: []entities.Metrics{
-				{Type: entities.CounterType, Name: "Alloc", Value: 10},
-				{Type: entities.GaugeType, Name: "Alloc", Value: 12.0},
+				{ID: "Alloc", MType: entities.CounterType, Value: &value},
+				{ID: "Alloc", MType: entities.GaugeType, Delta: &delta},
 			},
 			err: nil,
 		},
