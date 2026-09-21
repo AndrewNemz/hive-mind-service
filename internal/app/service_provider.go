@@ -18,7 +18,7 @@ type ServiceProvider struct {
 func NewServiceProvider(
 	storeInterval int, storageFile string, db *postgresql.PostgreSQL,
 ) *ServiceProvider {
-	storage := psqlmetricsrepo.NewPostgresStorage()
+	storage := psqlmetricsrepo.NewPostgresStorage(db)
 	metricUseCase := usecases.NewMetricUseCase(storage)
 	return &ServiceProvider{
 		Storage:       storage,

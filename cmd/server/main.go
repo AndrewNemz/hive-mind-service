@@ -67,7 +67,7 @@ func run() error {
 			lg.Fatal("Ошибка применения миграций", zap.Error(err))
 		}
 		lg.Info("Миграции успешно применены")
-		postgreSQLDB, err := postgresql.NewPostgreSQL(context.Background(), postgreDSN, postgresql.PoolConfig{
+		postgreSQLDB, err = postgresql.NewPostgreSQL(context.Background(), postgreDSN, postgresql.PoolConfig{
 			MaxOpenConns:    25,
 			MinConns:        5,
 			MaxConnLifetime: 30 * time.Minute,
