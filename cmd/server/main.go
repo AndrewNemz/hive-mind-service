@@ -61,16 +61,23 @@ func run() error {
 		zap.String("postgreDSN", postgreDSN),
 	)
 
-	postgreSQLDB, err := postgresql.NewPostgreSQL(context.Background(), postgreDSN, postgresql.PoolConfig{
-		MaxOpenConns:    25,
-		MinConns:        5,
-		MaxConnLifetime: 30 * time.Minute,
-		MaxConnIdleTime: 10 * time.Minute,
-	})
-	if err != nil {
-		lg.Fatal("Не удалось подключиться к PostgreSQL", zap.Error(err))
-	} else {
-		defer postgreSQLDB.Close()
+	var postgreSQLDB *postgresql.PostgreSQL
+	if postgreDSN != "" {
+		if err := postgresql.RunMigrations(postgreDSN, "./database/postgresql/migrations"); err != nil {
+			lg.Fatal("Ошибка применения миграций", zap.Error(err))
+		}
+		lg.Info("Миграции успешно применены")
+		postgreSQLDB, err := postgresql.NewPostgreSQL(context.Background(), postgreDSN, postgresql.PoolConfig{
+			MaxOpenConns:    25,
+			MinConns:        5,
+			MaxConnLifetime: 30 * time.Minute,
+			MaxConnIdleTime: 10 * time.Minute,
+		})
+		if err != nil {
+			lg.Fatal("Не удалось подключиться к PostgreSQL", zap.Error(err))
+		} else {
+			defer postgreSQLDB.Close()
+		}
 	}
 
 	r := chi.NewRouter()

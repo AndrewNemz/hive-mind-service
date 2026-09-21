@@ -2,6 +2,7 @@ package app
 
 import (
 	"hiv_mind/internal/repositories"
+	psqlmetricsrepo "hiv_mind/internal/repositories/psql_metrics_repo"
 	usecases "hiv_mind/internal/use_cases"
 	"hiv_mind/pkg/postgresql"
 )
@@ -17,7 +18,7 @@ type ServiceProvider struct {
 func NewServiceProvider(
 	storeInterval int, storageFile string, db *postgresql.PostgreSQL,
 ) *ServiceProvider {
-	storage := repositories.NewMemStorage()
+	storage := psqlmetricsrepo.NewPostgresStorage()
 	metricUseCase := usecases.NewMetricUseCase(storage)
 	return &ServiceProvider{
 		Storage:       storage,
