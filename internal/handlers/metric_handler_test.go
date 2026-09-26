@@ -15,7 +15,7 @@ import (
 var storeInterval, storageFile = 3, "/tmp/metrics-db.json"
 
 func TestUpdate(t *testing.T) {
-	serviceProvider := app.NewServiceProvider(storeInterval, storageFile, nil)
+	serviceProvider := app.NewServiceProvider(storeInterval, storageFile, nil, "")
 	metricHandler, err := NewMetricHandler(serviceProvider, "../../templates")
 	require.NoError(t, err, "Не удалось создать хендлер")
 
