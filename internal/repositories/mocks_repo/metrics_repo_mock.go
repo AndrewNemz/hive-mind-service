@@ -21,9 +21,9 @@ func (msr *MockStorageRepo) StoreMetricSlice(metrics []entities.Metrics) error {
 	return msr.Err
 }
 
-func (msr *MockStorageRepo) GetAllMetrics() []entities.Metrics {
+func (msr *MockStorageRepo) GetAllMetrics() ([]entities.Metrics, error) {
 	msr.HasCalled = true
-	return msr.Metrics
+	return msr.Metrics, nil
 }
 
 func (msr *MockStorageRepo) GetMetricByTypeAndName(metric *entities.Metrics) error {

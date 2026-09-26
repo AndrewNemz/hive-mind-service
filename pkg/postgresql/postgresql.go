@@ -4,10 +4,15 @@ import (
 	"context"
 	"fmt"
 	"hiv_mind/pkg/logger"
+	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgreSQL struct {
@@ -57,4 +62,25 @@ func (db *PostgreSQL) Close() {
 	if db.DB != nil {
 		db.DB.Close()
 	}
+}
+
+func RunMigrations(dsn, migrationsPath string) error {
+	migrateDSN := strings.Replace(dsn, "postgres://", "pgx5://", 1)
+
+	m, err := migrate.New(
+		"file://"+migrationsPath,
+		migrateDSN,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to init migrate: %w", err)
+	}
+
+	if err := m.Up(); err != nil {
+		if err == migrate.ErrNoChange {
+			return nil // Миграции уже применены, это не ошибка
+		}
+		return fmt.Errorf("failed to run migrations: %w", err)
+	}
+
+	return nil
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"hiv_mind/internal/repositories"
+	psqlmetricsrepo "hiv_mind/internal/repositories/psql_metrics_repo"
 	usecases "hiv_mind/internal/use_cases"
 	"hiv_mind/pkg/postgresql"
 )
@@ -15,9 +16,9 @@ type ServiceProvider struct {
 }
 
 func NewServiceProvider(
-	storeInterval int, storageFile string, db *postgresql.PostgreSQL,
+	storeInterval int, storageFile string, db *postgresql.PostgreSQL, postgresDSN string,
 ) *ServiceProvider {
-	storage := repositories.NewMemStorage()
+	storage := NewStorage(postgresDSN, db)
 	metricUseCase := usecases.NewMetricUseCase(storage)
 	return &ServiceProvider{
 		Storage:       storage,
@@ -26,4 +27,12 @@ func NewServiceProvider(
 		StorageFile:   storageFile,
 		DB:            db,
 	}
+}
+
+func NewStorage(postgresDSN string, db *postgresql.PostgreSQL) repositories.IMetricStoragerRepo {
+	if postgresDSN != "" {
+		storage := psqlmetricsrepo.NewPostgresStorage(db)
+		return storage
+	}
+	return repositories.NewMemStorage()
 }

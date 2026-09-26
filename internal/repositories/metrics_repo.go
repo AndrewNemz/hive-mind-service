@@ -65,7 +65,7 @@ func (ms *MemStorage) StoreMetricSlice(metrics []entities.Metrics) error {
 	return nil
 }
 
-func (ms *MemStorage) GetAllMetrics() []entities.Metrics {
+func (ms *MemStorage) GetAllMetrics() ([]entities.Metrics, error) {
 	ms.Mutex.Lock()
 	defer ms.Mutex.Unlock()
 
@@ -80,7 +80,7 @@ func (ms *MemStorage) GetAllMetrics() []entities.Metrics {
 		metrics = append(metrics, entities.Metrics{MType: "counter", ID: metricName, Delta: &val})
 	}
 
-	return metrics
+	return metrics, nil
 }
 
 func (ms *MemStorage) GetMetricByTypeAndName(metric *entities.Metrics) error {
