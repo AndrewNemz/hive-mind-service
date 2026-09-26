@@ -39,7 +39,10 @@ func (rmu *RunTimeMetricUseCase) CollectRunTimeMetric() error {
 
 func (rmu *RunTimeMetricUseCase) SendRunTimeMetric() error {
 
-	metrics := rmu.MetricRepo.GetAllMetrics()
+	metrics, err := rmu.MetricRepo.GetAllMetrics()
+	if err != nil {
+		return err
+	}
 	if err := rmu.MetricSender.SendMetrics(metrics); err != nil {
 		return err
 	}

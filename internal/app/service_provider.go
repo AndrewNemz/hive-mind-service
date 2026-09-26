@@ -16,9 +16,9 @@ type ServiceProvider struct {
 }
 
 func NewServiceProvider(
-	storeInterval int, storageFile string, db *postgresql.PostgreSQL,
+	storeInterval int, storageFile string, db *postgresql.PostgreSQL, postgresDSN string,
 ) *ServiceProvider {
-	storage := psqlmetricsrepo.NewPostgresStorage(db)
+	storage := NewStorage(postgresDSN, db)
 	metricUseCase := usecases.NewMetricUseCase(storage)
 	return &ServiceProvider{
 		Storage:       storage,
@@ -27,4 +27,12 @@ func NewServiceProvider(
 		StorageFile:   storageFile,
 		DB:            db,
 	}
+}
+
+func NewStorage(postgresDSN string, db *postgresql.PostgreSQL) repositories.IMetricStoragerRepo {
+	if postgresDSN != "" {
+		storage := psqlmetricsrepo.NewPostgresStorage(db)
+		return storage
+	}
+	return repositories.NewMemStorage()
 }

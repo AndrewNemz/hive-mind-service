@@ -38,6 +38,6 @@ func (mu *MetricsUseCase) GetMetricByTypeAndName(metric *entities.Metrics) error
 }
 
 func (mu *MetricsUseCase) GetAllMetrics() []entities.Metrics {
-	metrics := mu.repositories.GetAllMetrics()
+	metrics, _ := mu.repositories.GetAllMetrics()
 	return metrics
 }

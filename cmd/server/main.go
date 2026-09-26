@@ -81,7 +81,7 @@ func run() error {
 	}
 
 	r := chi.NewRouter()
-	serviceProvider := app.NewServiceProvider(storeInterval, storageFile, postgreSQLDB)
+	serviceProvider := app.NewServiceProvider(storeInterval, storageFile, postgreSQLDB, postgreDSN)
 	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates")
 	if err != nil {
 		lg.Error("не удалось загрузить шаблоны", zap.Error(err))
