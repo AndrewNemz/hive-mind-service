@@ -105,7 +105,12 @@ func (mh *MetricHandler) Value(w http.ResponseWriter, r *http.Request) {
 func (mh *MetricHandler) Root(w http.ResponseWriter, r *http.Request) {
 
 	lg := logger.Get()
-	metrics := mh.serviceProvider.MetricUseCase.GetAllMetrics()
+	metrics, err := mh.serviceProvider.MetricUseCase.GetAllMetrics()
+	if err != nil {
+		lg.Error("Ошибка при получении метрик", zap.Error(err))
+		http.Error(w, "Ошибка при получении метрик", http.StatusBadRequest)
+		return
+	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -129,6 +134,44 @@ func (mh *MetricHandler) Ping(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		lg.Error("DB PostgreSQL недоступна", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	return
+}
+
+func (mh *MetricHandler) UpdatesBatch(w http.ResponseWriter, r *http.Request) {
+	lg := logger.Get()
+	if r.Method != http.MethodPost {
+		lg.Info("Request method not allowed", zap.String("method", r.Method))
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+
+	var metrics []entities.Metrics
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&metrics); err != nil {
+		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
+		return
+	}
+
+	if len(metrics) == 0 {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	validMetrics := make([]entities.Metrics, 0, len(metrics))
+	for _, m := range metrics {
+		if ok := handlervalidators.IsValidMetric(m); ok {
+			validMetrics = append(validMetrics, m)
+		}
+	}
+
+	err := mh.serviceProvider.MetricUseCase.UpdateMetricsBatch(validMetrics)
+	if err != nil {
+		lg.Error("Failed to store metric", zap.Error(err))
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 

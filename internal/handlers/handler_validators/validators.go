@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hiv_mind/internal/entities"
+	"hiv_mind/pkg/logger"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -35,4 +36,23 @@ func ValidateParams(w http.ResponseWriter, r *http.Request, lg *zap.Logger) (*en
 	}
 
 	return &metric, nil
+}
+
+func IsValidMetric(metric entities.Metrics) bool {
+	lg := logger.Get()
+
+	if metric.MType == "" || metric.ID == "" {
+		lg.Info("Не переданы обязательные параметры!")
+		return false
+	}
+	if metric.Value == nil && metric.Delta == nil {
+		lg.Info("Не переданы обязательные параметры!")
+		return false
+	}
+	if metric.MType != entities.GaugeType && metric.MType != entities.CounterType {
+		lg.Info("Не переданы обязательные параметры!")
+		return false
+	}
+
+	return true
 }

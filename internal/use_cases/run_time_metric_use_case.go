@@ -43,7 +43,7 @@ func (rmu *RunTimeMetricUseCase) SendRunTimeMetric() error {
 	if err != nil {
 		return err
 	}
-	if err := rmu.MetricSender.SendMetrics(metrics); err != nil {
+	if err := rmu.MetricSender.SendBatchMetrics(metrics); err != nil {
 		return err
 	}
 
