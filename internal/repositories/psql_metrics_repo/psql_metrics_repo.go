@@ -151,7 +151,7 @@ func (ps *PostgresStorage) GetMetricByTypeAndName(metric *entities.Metrics) erro
 
 	if err := ps.db.DB.QueryRow(
 		context.Background(), query, metric.ID, metric.MType,
-	).Scan(valuePtr, deltaPtr); err != nil {
+	).Scan(&valuePtr, &deltaPtr); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repoerrors.ErrNotFoundMetric
 		}
