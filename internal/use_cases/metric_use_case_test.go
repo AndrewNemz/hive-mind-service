@@ -4,12 +4,16 @@ import (
 	"fmt"
 	"hiv_mind/internal/entities"
 	"hiv_mind/internal/repositories"
+	"hiv_mind/pkg/retry"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestMetricUseCase(t *testing.T) {
+	backoff := retry.NewCustomBackOff()
+	repo := repositories.NewMemStorage()
+	usecase := NewMetricUseCase(repo, backoff)
 	data := []struct {
 		tName string
 		metic entities.Metrics
@@ -34,8 +38,6 @@ func TestMetricUseCase(t *testing.T) {
 
 	for _, d := range data {
 		t.Run(d.tName, func(t *testing.T) {
-			repo := repositories.NewMemStorage()
-			usecase := NewMetricUseCase(repo)
 
 			err := usecase.CollectAndStoreMetric(&d.metic)
 

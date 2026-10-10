@@ -44,7 +44,7 @@ func TestRunTimeMetricUseCaseMethodCollectRunTimeMetric(t *testing.T) {
 				Metrics:   d.metrics,
 				Err:       d.err,
 			}
-			usecase := NewRunTimeMetricUseCase(metricRepo, metricSender)
+			usecase := NewRunTimeMetricUseCase(metricRepo, metricSender, nil)
 
 			err := usecase.CollectRunTimeMetric()
 			if err != nil {
@@ -85,7 +85,7 @@ func TestSendRunTimeMetric(t *testing.T) {
 				Metrics: d.metrics,
 				Err:     d.err,
 			}
-			usecase := NewRunTimeMetricUseCase(metricRepo, metricSender)
+			usecase := NewRunTimeMetricUseCase(metricRepo, metricSender, nil)
 
 			err := usecase.SendRunTimeMetric()
 			if err != nil {

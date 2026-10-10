@@ -2,6 +2,7 @@ package usecases
 
 import (
 	"hiv_mind/internal/repositories"
+	"hiv_mind/pkg/retry"
 	"runtime"
 )
 
@@ -13,15 +14,18 @@ type IRunTimeMetricUseCase interface {
 type RunTimeMetricUseCase struct {
 	MetricRepo   repositories.IMetricStoragerRepo
 	MetricSender repositories.IMetricSender
+	BackOff      *retry.CustomBackOff
 }
 
 func NewRunTimeMetricUseCase(
 	metricRepo repositories.IMetricStoragerRepo,
 	metricSender repositories.IMetricSender,
+	backoff *retry.CustomBackOff,
 ) *RunTimeMetricUseCase {
 	return &RunTimeMetricUseCase{
 		MetricRepo:   metricRepo,
 		MetricSender: metricSender,
+		BackOff:      backoff,
 	}
 }
 
@@ -30,11 +34,15 @@ func (rmu *RunTimeMetricUseCase) CollectRunTimeMetric() error {
 	runtime.ReadMemStats(rtm)
 
 	metrics := MapRunTimeMetricToMetricEntitySlice(rtm)
-	if err := rmu.MetricRepo.StoreMetricSlice(metrics); err != nil {
-		return err
-	}
 
-	return nil
+	err := rmu.BackOff.Retry(
+		func() error {
+			return rmu.MetricRepo.StoreMetricSlice(metrics)
+		},
+		retry.IsRetriableDBError,
+	)
+
+	return err
 }
 
 func (rmu *RunTimeMetricUseCase) SendRunTimeMetric() error {

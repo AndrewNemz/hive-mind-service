@@ -3,6 +3,7 @@ package app
 import (
 	"hiv_mind/internal/repositories"
 	usecases "hiv_mind/internal/use_cases"
+	"hiv_mind/pkg/retry"
 )
 
 type AgentProvider struct {
@@ -18,7 +19,8 @@ type AgentProvider struct {
 func NewAgentProvider(adresss string, reportInterval, pollInterval int) *AgentProvider {
 	storage := repositories.NewMemStorage()
 	sender := repositories.NewMetricSender(adresss)
-	metricUseCase := usecases.NewRunTimeMetricUseCase(storage, sender)
+	backoff := retry.NewCustomBackOff()
+	metricUseCase := usecases.NewRunTimeMetricUseCase(storage, sender, backoff)
 	return &AgentProvider{
 		Storage:              storage,
 		RunTimeMetricUseCase: metricUseCase,
