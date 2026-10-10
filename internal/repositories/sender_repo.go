@@ -53,26 +53,26 @@ func (ms *MetricSender) SendMetrics(metrics []entities.Metrics) error {
 	return nil
 }
 
-func (ms *MetricSender) SendBatchMetrics(metrics []entities.Metrics) error {
+func (ms *MetricSender) SendBatchMetrics(metrics []entities.Metrics) (int, error) {
 	lg := logger.Get()
 
 	jsonData, err := json.Marshal(metrics)
 	if err != nil {
 		lg.Error("Ошибка декордирования", zap.Error(err))
-		return err
+		return 0, err
 	}
 
 	compressData, err := compressdata.Compress(jsonData)
 	if err != nil {
 		lg.Error("Ошибка сжатия данных", zap.Error(err))
-		return err
+		return 0, err
 	}
 
-	_, err = ms.client.R().SetBody(compressData).Post("/")
+	response, err := ms.client.R().SetBody(compressData).Post("/")
 	if err != nil {
 		lg.Error("", zap.Error(err))
-		return err
+		return response.StatusCode(), err
 	}
 
-	return nil
+	return 0, nil
 }

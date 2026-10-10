@@ -47,7 +47,7 @@ func (mu *MetricsUseCase) GetMetricByTypeAndName(metric *entities.Metrics) error
 	return err
 }
 
-func (mu *MetricsUseCase) GetAllMetrics() []entities.Metrics {
+func (mu *MetricsUseCase) GetAllMetrics() ([]entities.Metrics, error) {
 	var metrics []entities.Metrics
 	var err error
 
@@ -59,12 +59,17 @@ func (mu *MetricsUseCase) GetAllMetrics() []entities.Metrics {
 		retry.IsRetriableDBError,
 	)
 
-	return metrics
+	return metrics, err
 }
 
 func (mu *MetricsUseCase) UpdateMetricsBatch(metrics []entities.Metrics) error {
-	if err := mu.repositories.StoreMetricSlice(metrics); err != nil {
-		return err
-	}
-	return nil
+
+	err := mu.backoff.Retry(
+		func() error {
+			return mu.repositories.StoreMetricSlice(metrics)
+		},
+		retry.IsRetriableDBError,
+	)
+
+	return err
 }

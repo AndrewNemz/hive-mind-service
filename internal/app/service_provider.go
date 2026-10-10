@@ -14,7 +14,6 @@ type ServiceProvider struct {
 	StoreInterval int
 	StorageFile   string
 	DB            *postgresql.PostgreSQL
-	BackOFF       *retry.CustomBackOff
 }
 
 func NewServiceProvider(

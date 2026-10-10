@@ -38,7 +38,7 @@ func IsRetriableDBError(err error) bool {
 	return false
 }
 
-func IsRetriableHTTPError(err error, statusCode int) bool {
+func IsRetriableHTTPError(statusCode int, err error) bool {
 	if err != nil {
 		var netErr net.Error
 		return errors.As(err, &netErr)

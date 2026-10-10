@@ -1,6 +1,7 @@
 package usecases
 
 import (
+	"hiv_mind/internal/entities"
 	"hiv_mind/internal/repositories"
 	"hiv_mind/pkg/retry"
 	"runtime"
@@ -47,13 +48,27 @@ func (rmu *RunTimeMetricUseCase) CollectRunTimeMetric() error {
 
 func (rmu *RunTimeMetricUseCase) SendRunTimeMetric() error {
 
-	metrics, err := rmu.MetricRepo.GetAllMetrics()
-	if err != nil {
-		return err
-	}
-	if err := rmu.MetricSender.SendBatchMetrics(metrics); err != nil {
-		return err
-	}
+	var metrics []entities.Metrics
+	var statusCode int
+	var err error
+
+	err = rmu.BackOff.Retry(
+		func() error {
+			metrics, err = rmu.MetricRepo.GetAllMetrics()
+			return err
+		},
+		retry.IsRetriableDBError,
+	)
+
+	err = rmu.BackOff.Retry(
+		func() error {
+			statusCode, err = rmu.MetricSender.SendBatchMetrics(metrics)
+			return err
+		},
+		func(err error) bool {
+			return retry.IsRetriableHTTPError(statusCode, err)
+		},
+	)
 
 	return nil
 }
