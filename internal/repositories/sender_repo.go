@@ -8,6 +8,7 @@ import (
 	"hiv_mind/pkg/logger"
 
 	"github.com/go-resty/resty/v2"
+	"go.uber.org/zap"
 )
 
 type MetricSender struct {
@@ -18,7 +19,7 @@ type MetricSender struct {
 func NewMetricSender(adresss string) *MetricSender {
 	return &MetricSender{
 		client: resty.New().
-			SetBaseURL(fmt.Sprintf("http://%s/update", adresss)).
+			SetBaseURL(fmt.Sprintf("http://%s/updates/", adresss)).
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader(`Content-Type`, "application/json"),
 		Adresss: adresss,
@@ -47,6 +48,30 @@ func (ms *MetricSender) SendMetrics(metrics []entities.Metrics) error {
 			lg.Sugar().Errorf("Ошибка отправки метрики %s: %v\n", m.ID, err)
 			continue
 		}
+	}
+
+	return nil
+}
+
+func (ms *MetricSender) SendBatchMetrics(metrics []entities.Metrics) error {
+	lg := logger.Get()
+
+	jsonData, err := json.Marshal(metrics)
+	if err != nil {
+		lg.Error("Ошибка декордирования", zap.Error(err))
+		return err
+	}
+
+	compressData, err := compressdata.Compress(jsonData)
+	if err != nil {
+		lg.Error("Ошибка сжатия данных", zap.Error(err))
+		return err
+	}
+
+	_, err = ms.client.R().SetBody(compressData).Post("/")
+	if err != nil {
+		lg.Error("", zap.Error(err))
+		return err
 	}
 
 	return nil

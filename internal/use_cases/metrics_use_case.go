@@ -9,7 +9,8 @@ import (
 type IMetricsUseCase interface {
 	CollectAndStoreMetric(m *entities.Metrics) error
 	GetMetricByTypeAndName(metric *entities.Metrics) error
-	GetAllMetrics() []entities.Metrics
+	GetAllMetrics() ([]entities.Metrics, error)
+	UpdateMetricsBatch(metrics []entities.Metrics) error
 }
 
 type MetricsUseCase struct {
@@ -59,4 +60,11 @@ func (mu *MetricsUseCase) GetAllMetrics() []entities.Metrics {
 	)
 
 	return metrics
+}
+
+func (mu *MetricsUseCase) UpdateMetricsBatch(metrics []entities.Metrics) error {
+	if err := mu.repositories.StoreMetricSlice(metrics); err != nil {
+		return err
+	}
+	return nil
 }

@@ -104,6 +104,7 @@ func run() error {
 	r.Get("/", metricHandler.Root)
 	r.Post("/value/", metricHandler.Value)
 	r.Post("/update/", metricHandler.Update)
+	r.Post("/updates/", metricHandler.UpdatesBatch)
 	r.Get("/ping", metricHandler.Ping)
 
 	server := &http.Server{
