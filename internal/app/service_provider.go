@@ -5,6 +5,7 @@ import (
 	psqlmetricsrepo "hiv_mind/internal/repositories/psql_metrics_repo"
 	usecases "hiv_mind/internal/use_cases"
 	"hiv_mind/pkg/postgresql"
+	"hiv_mind/pkg/retry"
 )
 
 type ServiceProvider struct {
@@ -19,7 +20,9 @@ func NewServiceProvider(
 	storeInterval int, storageFile string, db *postgresql.PostgreSQL, postgresDSN string,
 ) *ServiceProvider {
 	storage := NewStorage(postgresDSN, db)
-	metricUseCase := usecases.NewMetricUseCase(storage)
+	backoff := retry.NewCustomBackOff()
+	metricUseCase := usecases.NewMetricUseCase(storage, backoff)
+
 	return &ServiceProvider{
 		Storage:       storage,
 		MetricUseCase: metricUseCase,

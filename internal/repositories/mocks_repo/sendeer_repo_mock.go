@@ -14,8 +14,8 @@ func (msr *MockSenderRepo) SendMetrics(metrics []entities.Metrics) error {
 	return msr.Err
 }
 
-func (msr *MockSenderRepo) SendBatchMetrics(metrics []entities.Metrics) error {
+func (msr *MockSenderRepo) SendBatchMetrics(metrics []entities.Metrics) (int, error) {
 	msr.HasCalled = true
 	msr.Metrics = metrics
-	return msr.Err
+	return 0, msr.Err
 }
