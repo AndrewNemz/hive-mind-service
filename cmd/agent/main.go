@@ -17,12 +17,14 @@ var (
 	reportInterval *int
 	pollInterval   *int
 	adresss        *string
+	hashKey        *string
 )
 
 func init() {
 	reportInterval = flag.Int("r", 10, "частота отправки метрик на сервер (по умолчанию 10 секунд)")
 	pollInterval = flag.Int("p", 2, "частоту опроса метрик из пакета runtime (по умолчанию 2 секунды)")
 	adresss = flag.String("a", "localhost:8080", "отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080)")
+	hashKey = flag.String("k", "", "Ключ, на основе которого рассчитывается hash")
 }
 
 func main() {
@@ -35,7 +37,6 @@ func main() {
 }
 
 func run() error {
-	flag.Parse()
 
 	if envAdress := os.Getenv("ADDRESS"); envAdress != "" {
 		*adresss = envAdress
@@ -53,13 +54,19 @@ func run() error {
 		}
 	}
 
+	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
+		*hashKey = envHashKey
+	}
+
 	if err := logger.Initialize("info"); err != nil {
 		return fmt.Errorf("init logger: %w", err)
 	}
+
+	flag.Parse()
 	lg := logger.Get()
 	defer lg.Sync()
 
-	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval)
+	agentProvider := app.NewAgentProvider(*adresss, *reportInterval, *pollInterval, *hashKey)
 	handler := handlers.NewAgentHandler(agentProvider)
 
 	if err := handler.HandleRunTimeMetric(); err != nil {

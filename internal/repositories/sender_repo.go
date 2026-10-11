@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"hiv_mind/internal/entities"
 	compressdata "hiv_mind/pkg/compress_data"
+	"hiv_mind/pkg/hash"
 	"hiv_mind/pkg/logger"
 
 	"github.com/go-resty/resty/v2"
@@ -14,15 +15,17 @@ import (
 type MetricSender struct {
 	client  *resty.Client
 	Adresss string
+	HashKey string
 }
 
-func NewMetricSender(adresss string) *MetricSender {
+func NewMetricSender(adresss, hashKey string) *MetricSender {
 	return &MetricSender{
 		client: resty.New().
 			SetBaseURL(fmt.Sprintf("http://%s/updates/", adresss)).
 			SetHeader("Content-Encoding", "gzip").
 			SetHeader(`Content-Type`, "application/json"),
 		Adresss: adresss,
+		HashKey: hashKey,
 	}
 }
 
@@ -61,6 +64,14 @@ func (ms *MetricSender) SendBatchMetrics(metrics []entities.Metrics) (int, error
 		lg.Error("Ошибка декордирования", zap.Error(err))
 		return 0, err
 	}
+	var calcHash string
+	if ms.HashKey != "" {
+		calcHash, err = hash.CalcHash(ms.HashKey, string(jsonData))
+		if err != nil {
+			lg.Error("Ошибка вычисления хеша", zap.Error(err))
+			return 0, err
+		}
+	}
 
 	compressData, err := compressdata.Compress(jsonData)
 	if err != nil {
@@ -68,11 +79,17 @@ func (ms *MetricSender) SendBatchMetrics(metrics []entities.Metrics) (int, error
 		return 0, err
 	}
 
-	response, err := ms.client.R().SetBody(compressData).Post("/")
-	if err != nil {
-		lg.Error("", zap.Error(err))
-		return response.StatusCode(), err
+	req := ms.client.R().SetBody(compressData)
+
+	if calcHash != "" {
+		req.SetHeader("HashSHA256", calcHash)
 	}
 
-	return 0, nil
+	response, err := req.Post("/")
+	if err != nil {
+		lg.Error("", zap.Error(err))
+		return 0, err
+	}
+
+	return response.StatusCode(), nil
 }

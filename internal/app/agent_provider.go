@@ -16,9 +16,9 @@ type AgentProvider struct {
 	PollInterval   int
 }
 
-func NewAgentProvider(adresss string, reportInterval, pollInterval int) *AgentProvider {
+func NewAgentProvider(adresss string, reportInterval, pollInterval int, hashKey string) *AgentProvider {
 	storage := repositories.NewMemStorage()
-	sender := repositories.NewMetricSender(adresss)
+	sender := repositories.NewMetricSender(adresss, hashKey)
 	backoff := retry.NewCustomBackOff()
 	metricUseCase := usecases.NewRunTimeMetricUseCase(storage, sender, backoff)
 	return &AgentProvider{
