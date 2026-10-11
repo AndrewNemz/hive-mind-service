@@ -26,6 +26,7 @@ var storeInterval int
 var storageFile string
 var restoreValues bool
 var postgreDSN string
+var hashK string
 
 func init() {
 	flag.StringVar(&adress, "a", "localhost:8080", "отвечает за адрес эндпоинта HTTP-сервера (по умолчанию localhost:8080)")
@@ -33,6 +34,7 @@ func init() {
 	flag.StringVar(&storageFile, "f", "/tmp/metrics-db.json", "полное имя файла, куда сохраняются текущие значения")
 	flag.BoolVar(&restoreValues, "r", true, "булево значение (true/false), определяющее, загружать или нет ранее сохранённые значения из указанного файла при старте сервера")
 	flag.StringVar(&postgreDSN, "d", "", "URL для подключения к PostgreSQL")
+	flag.StringVar(&hashK, "k", "", "Ключ, на основе которого рассчитывается hash")
 }
 
 func main() {
@@ -82,7 +84,7 @@ func run() error {
 
 	r := chi.NewRouter()
 	serviceProvider := app.NewServiceProvider(storeInterval, storageFile, postgreSQLDB, postgreDSN)
-	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates")
+	metricHandler, err := handlers.NewMetricHandler(serviceProvider, "./templates", hashK)
 	if err != nil {
 		lg.Error("не удалось загрузить шаблоны", zap.Error(err))
 		return err
@@ -196,6 +198,10 @@ func GetEnvironment() error {
 
 	if envpostgreDSN := os.Getenv("DATABASE_DSN"); envpostgreDSN != "" {
 		postgreDSN = envpostgreDSN
+	}
+
+	if envHashKey := os.Getenv("KEY"); envHashKey != "" {
+		hashK = envHashKey
 	}
 
 	return nil

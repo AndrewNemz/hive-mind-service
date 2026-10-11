@@ -8,8 +8,10 @@ import (
 	"hiv_mind/internal/entities"
 	repoerrors "hiv_mind/internal/errors"
 	handlervalidators "hiv_mind/internal/handlers/handler_validators"
+	handlersutils "hiv_mind/internal/handlers/handlers_utils"
 	"hiv_mind/pkg/logger"
 	"html/template"
+	"io"
 	"net/http"
 	"path/filepath"
 
@@ -19,9 +21,10 @@ import (
 type MetricHandler struct {
 	serviceProvider *app.ServiceProvider
 	Template        *template.Template
+	HashK           string
 }
 
-func NewMetricHandler(sp *app.ServiceProvider, templatesDir string) (*MetricHandler, error) {
+func NewMetricHandler(sp *app.ServiceProvider, templatesDir, hashK string) (*MetricHandler, error) {
 
 	tmplPath := filepath.Join(templatesDir, "metrics.html")
 	tmpl, err := template.ParseFiles(tmplPath)
@@ -31,6 +34,7 @@ func NewMetricHandler(sp *app.ServiceProvider, templatesDir string) (*MetricHand
 	return &MetricHandler{
 		serviceProvider: sp,
 		Template:        tmpl,
+		HashK:           hashK,
 	}, nil
 }
 
@@ -149,9 +153,17 @@ func (mh *MetricHandler) UpdatesBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	body, err := io.ReadAll(r.Body)
+	reqHash := r.Header.Get("HashSHA256")
+
+	if err := handlersutils.IsEqualHash(reqHash, mh.HashK, body); err != nil {
+		lg.Warn("Hash validation failed", zap.Error(err))
+		http.Error(w, "Invalid hash", http.StatusBadRequest)
+		return
+	}
+
 	var metrics []entities.Metrics
-	decoder := json.NewDecoder(r.Body)
-	if err := decoder.Decode(&metrics); err != nil {
+	if err := json.Unmarshal(body, &metrics); err != nil {
 		http.Error(w, "Invalid JSON payload", http.StatusBadRequest)
 		return
 	}
@@ -168,7 +180,7 @@ func (mh *MetricHandler) UpdatesBatch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := mh.serviceProvider.MetricUseCase.UpdateMetricsBatch(validMetrics)
+	err = mh.serviceProvider.MetricUseCase.UpdateMetricsBatch(validMetrics)
 	if err != nil {
 		lg.Error("Failed to store metric", zap.Error(err))
 		w.WriteHeader(http.StatusBadRequest)
